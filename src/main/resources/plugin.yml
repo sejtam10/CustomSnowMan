@@ -1,0 +1,8 @@
+name: Banka
+description: Banka plugin.
+author: sejtam.developer@gmail.com
+authors: [Sejtam_]
+website: www.sejtam.cz
+version: 0.0.1
+main: dev.sejtam.Banka.Banka
+load: POSTWORLD
