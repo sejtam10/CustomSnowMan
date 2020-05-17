@@ -16,4 +16,7 @@ public class ClassicAccount extends BankAccount {
         super(name, password, AccountType.klasicky);
     }
 
+    public ClassicAccount(int id, String name, String password, int money, AccountType accountType) {
+        super(id, name, password, money, accountType);
+    }
 }

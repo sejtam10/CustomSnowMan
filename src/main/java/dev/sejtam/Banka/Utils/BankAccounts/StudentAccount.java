@@ -9,4 +9,8 @@ public class StudentAccount extends BankAccount {
         super(name, password, AccountType.studentsky);
     }
 
+    public StudentAccount(int id, String name, String password, int money, AccountType accountType) {
+        super(id, name, password, money, accountType);
+    }
+
 }

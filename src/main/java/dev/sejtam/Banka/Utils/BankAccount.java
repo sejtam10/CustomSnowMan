@@ -1,6 +1,8 @@
 package dev.sejtam.Banka.Utils;
 
 import dev.sejtam.Banka.Banka;
+import dev.sejtam.Banka.Utils.BankAccounts.ClassicAccount;
+import dev.sejtam.Banka.Utils.BankAccounts.StudentAccount;
 import dev.sejtam.Banka.Utils.Enums.AccountType;
 import dev.sejtam.Banka.Utils.Enums.ActionType;
 
@@ -9,6 +11,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 public class BankAccount {
@@ -28,50 +31,79 @@ public class BankAccount {
 
     public BankAccount(String name, String password) {
         this.name = name;
-        this.password = password;
+        this.password = Base64.getEncoder().encodeToString(password.getBytes());
+        this.accountType = AccountType.klasicky;
     }
     public BankAccount(String name, String password, int money, AccountType accountType) {
+        this.name = name;
+        this.password = Base64.getEncoder().encodeToString(password.getBytes());
+        this.money = money;
+        this.accountType = accountType;
+    }
+    public BankAccount(int id, String name, String password, int money, AccountType accountType) {
+        this.id = id;
         this.name = name;
         this.password = password;
         this.money = money;
         this.accountType = accountType;
-        createAccount();
     }
     public BankAccount(String name, String password, AccountType accountType) {
         this(name, password, 0, accountType);
     }
 
     //MySQL Management
-    public boolean createAccount() {
+    public BankAccount createAccount() {
         try {
             if(Banka.getConnection() == null)
-                return false;
+                return null;
 
             if(Banka.getConnection().isClosed())
-                return false;
+                return null;
 
             ResultSet resultSet = getAccount();
-            if(resultSet.next()) {
+            if(resultSet != null) {
                 this.id = resultSet.getInt("id");
                 this.name = resultSet.getString("name");
                 this.password = resultSet.getString("password");
                 this.accountType = AccountType.valueOf(resultSet.getString("type"));
                 this.money = resultSet.getInt("money");
-                return true;
+
+                switch(this.accountType) {
+                    case klasicky:
+                        return new ClassicAccount(this.id, this.name, this.password, this.money, this.accountType);
+                    case studentsky:
+                        return new StudentAccount(this.id, this.name, this.password, this.money, this.accountType);
+                    default:
+                        return new BankAccount(this.id, this.name, this.password, this.money, this.accountType);
+                }
             }
 
             Statement statement = Banka.getConnection().createStatement();
-            statement.execute(String.format("INSERT INTO banka.ucty (name, password, type, money) VALUES (%s, %s, %s, %s)",
+            statement.execute(String.format("INSERT INTO banka.ucty (name, password, type, money) VALUES ('%s', '%s', '%s', '%s')",
                                             this.name, this.password, this.accountType.toString(), this.money));
 
-            resultSet = statement.executeQuery("SELECT t.id FROM banka.ucty");
+            resultSet = statement.executeQuery("SELECT t.id FROM banka.ucty t WHERE t.name = '" + this.name + "'");
             if(resultSet.next()) {
                 this.id = resultSet.getInt("id");
-                return true;
+                return this;
             }
 
+            return null;
+        } catch (SQLException ex) { ex.printStackTrace(); return null; }
+    }
+    public boolean isPasswordSame() {
+        ResultSet resultSet = getAccount();
+        if(resultSet == null) {
             return false;
-        } catch (Exception ex) { return false; }
+        }
+
+        try {
+            String password = resultSet.getString("password");
+            return this.password.equals(password);
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
     }
     public boolean removeAccount() {
         try {
@@ -91,11 +123,7 @@ public class BankAccount {
         }
     }
     public boolean isAccountExists() {
-        try {
-            return getAccount().next();
-        } catch(SQLException ex) {
-            return false;
-        }
+       return getAccount() != null;
     }
     public ResultSet getAccount() {
         try {
@@ -106,12 +134,12 @@ public class BankAccount {
                 return null;
 
             Statement statement = Banka.getConnection().createStatement();
-            ResultSet result = statement.executeQuery("SELECT t.* FROM banka.ucty t WHERE t.name = '" + this.name + "' AND t.password = '" + this.password + "'");
+            ResultSet result = statement.executeQuery("SELECT t.* FROM banka.ucty t WHERE t.name = '" + this.name + "'");
             if (result.next()) {
                 return result;
             }
             return null;
-        } catch (Exception ex) { return null; }
+        } catch (SQLException ex) { return null; }
     }
 
     private boolean createLog(BankAccount.Log log) {
@@ -126,9 +154,10 @@ public class BankAccount {
                 return false;
 
             Statement statement = Banka.getConnection().createStatement();
-            statement.execute(String.format("INSERT INTO banka.logs (id, name, type, money) VALUES (%s, %s, %s, %s)", this.id, this.name, action, money));
+            statement.execute(String.format("INSERT INTO banka.logs (id, name, type, money) VALUES ('%s', '%s', '%s', '%s')", this.id, this.name, action, money));
             return true;
         } catch(SQLException ex) {
+            ex.printStackTrace();
             return false;
         }
     }
@@ -166,7 +195,7 @@ public class BankAccount {
 
         try {
             return this.money = resultSet.getInt("money");
-        } catch (Exception ex) { return -1; }
+        } catch (SQLException ex) { return -1; }
     }
     private boolean setMoney(int money) {
         try {
@@ -177,9 +206,9 @@ public class BankAccount {
                 return false;
 
             Statement statement = Banka.getConnection().createStatement();
-            statement.execute("INSERT INTO banka.ucty t (t.money) VALUES (" + money + ") WHERE t.name = '" + this.name + "'");
+            statement.execute("UPDATE banka.ucty SET money = '" + money + "' WHERE name = '" + this.name + "'");
             return true;
-        } catch (SQLException ex) { return false; }
+        } catch (SQLException ex) { ex.printStackTrace(); return false; }
     }
 
     private int addMoney(int money) {
@@ -192,7 +221,7 @@ public class BankAccount {
 
         if(poplatekP() != 0 && transaction == false) {
             int money_cache = money;
-            money = (int) (money * (100 - poplatekO()) / 100);
+            money = (int) (money * (100 - poplatekP()) / 100);
             createLog(ActionType.poplatek, money_cache - money);
         }
 
@@ -202,7 +231,7 @@ public class BankAccount {
     }
 
     private int removeMoney(int money) {
-        return removeMoney(money, true);
+        return removeMoney(money, false);
     }
     private int removeMoney(int money, boolean transaction) {
         int _money = getMoney();
@@ -224,21 +253,23 @@ public class BankAccount {
         else return -1;
     }
 
-    public void action(ActionType action, int money, boolean ... prevod) {
+    public int action(ActionType action, int money, boolean ... prevod) {
+        int number = -1;
         switch(action) {
             case vklad:
-                addMoney(money);
+                number = addMoney(money);
                 break;
             case vyber:
-                removeMoney(money);
+                number = removeMoney(money);
                 break;
             case prevod:
                 if(prevod[0])
-                    removeMoney(money, true);
-                else addMoney(money, true);
+                    number = removeMoney(money, true);
+                else number = addMoney(money, true);
                 break;
         }
         createLog(action, money);
+        return number;
     }
 
     public class Log {

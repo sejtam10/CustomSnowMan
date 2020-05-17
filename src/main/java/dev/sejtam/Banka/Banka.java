@@ -1,5 +1,7 @@
 package dev.sejtam.Banka;
 
+import dev.sejtam.Banka.Commands.Bank;
+import dev.sejtam.Banka.Utils.Log;
 import dev.sejtam.Banka.Utils.MySQL;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -27,6 +29,10 @@ public class Banka extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
+
+        MySQLSetup();
+
+        getCommand("banka").setExecutor(new Bank());
     }
 
 
@@ -41,7 +47,10 @@ public class Banka extends JavaPlugin {
         try {
             Class.forName("com.mysql.jdbc.Driver").newInstance();
 
-            connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/banka", "root", "123456789");
+            Log.log("MySQL Driver setup");
+            connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/banka", "root", "");
+            if(connection != null)
+                Log.log("MySQL Setup completed");
         } catch (SQLException | ClassNotFoundException | IllegalAccessException | InstantiationException ex) { ex.printStackTrace(); }
         MySQL.createTables();
     }
