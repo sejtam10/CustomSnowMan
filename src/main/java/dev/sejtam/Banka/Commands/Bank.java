@@ -4,16 +4,27 @@ import dev.sejtam.Banka.Utils.BankAccount;
 import dev.sejtam.Banka.Utils.Enums.AccountType;
 import dev.sejtam.Banka.Utils.Enums.ActionType;
 import dev.sejtam.Banka.Utils.Log;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class Bank implements CommandExecutor {
+public class Bank implements CommandExecutor, Listener {
 
     Map<String, BankAccount> accounts = new HashMap<>();
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        if(accounts.get(event.getPlayer().getName()) != null)
+            accounts.remove(event.getPlayer().getName());
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -22,7 +33,7 @@ public class Bank implements CommandExecutor {
             return true;
         }
 
-        if(args.length >= 1) {
+        if(args.length == 1) {
             if(args[0].equalsIgnoreCase("help") || args[0].equalsIgnoreCase("?") ) {
                 sendHelp(sender);
                 return true;
@@ -31,8 +42,20 @@ public class Bank implements CommandExecutor {
             if(args[0].equalsIgnoreCase("logout")) {
                 if(accounts.containsKey(sender.getName())) {
                     accounts.remove(sender.getName());
-                    Log.log(sender, "Byl jsi odhlasen!");
-                } else Log.error(sender, "Nejsi prihlasen!");
+                    Log.log(sender, "Byl jsi odhlasen");
+                } else Log.error(sender, "Nejsi prihlasen");
+                return true;
+            }
+
+            if(args[0].equalsIgnoreCase("remove")) {
+                if(accounts.containsKey(sender.getName())) {
+                    if(accounts.get(sender.getName()).removeAccount())
+                        Log.log(sender, "Ucet byl smazan a byl jsi odhlasen");
+                    else { Log.error("Nastala chyba"); return false; }
+
+                    accounts.remove(sender.getName());
+                    return true;
+                } else Log.error(sender, "Nejsi prihlasen");
                 return true;
             }
         }
@@ -100,9 +123,11 @@ public class Bank implements CommandExecutor {
                     return false;
                 }
 
-                if(accounts.containsValue(args[1])) {
-                    Log.error(sender, "Na tomto ucte je jiz nekdo prihlasen");
-                    return false;
+                for(Map.Entry<String, BankAccount> entry : accounts.entrySet()) {
+                    if(entry.getValue().getName().equals(args[1])) {
+                        Log.error(sender, "Na tomto ucte je jiz nekdo prihlasen");
+                        return false;
+                    }
                 }
 
                 BankAccount account = new BankAccount(args[1], args[2]);
@@ -118,6 +143,71 @@ public class Bank implements CommandExecutor {
                     accounts.put(sender.getName(), account.createAccount());
                     Log.log(sender, "Byl jsi prihlasen");
                 }
+                return true;
+            }
+
+            if(args[0].equalsIgnoreCase("remove")) {
+                BankAccount account = new BankAccount(args[1], args[2]);
+                if(!account.isAccountExists()) {
+                    Log.error(sender, "Tento ucet neexistuje");
+                    return false;
+                }
+
+                if(!account.isPasswordSame()) {
+                    Log.error(sender, "Heslo neni spravne");
+                    return false;
+                }
+
+                if(!account.removeAccount()) {
+                    Log.error("Nastala chyba");
+                    return false;
+                }
+
+                accounts.forEach((k, v) -> {
+                    if(v.getName().equals(account.getName())) {
+                        Player player = Bukkit.getPlayer(k);
+                        if(player != null)
+                            Log.log(player, "Ucet byl smazan a byl jsi odhlasen");
+
+                        accounts.remove(k);
+                    }
+                });
+
+                Log.log(sender, "Ucet byl smazan");
+            }
+
+            if(args[0].equalsIgnoreCase("prevod")) {
+                if(!accounts.containsKey(sender.getName())) {
+                    Log.error(sender, "Nejsi prihlasen na zadnem ucte");
+                    return false;
+                }
+
+                BankAccount account = new BankAccount(args[1]);
+                if(!account.isAccountExists()) {
+                    Log.error(sender, "Ucet neexistuje");
+                    return false;
+                }
+
+                int cislo = -1;
+                try {
+                    cislo = Integer.parseInt(args[2]);
+                } catch(NumberFormatException ex) {
+                    Log.error(sender, "Castka neni cislo");
+                    return false;
+                }
+
+                if(cislo <= 0) {
+                    Log.error(sender, "Castka nemuze byt menci jak 1");
+                    return false;
+                }
+
+                if(accounts.get(sender.getName()).action(ActionType.prevod, cislo, true) == -1) {
+                    Log.error(sender, "Nemas dostatek penez");
+                    return false;
+                }
+
+                account.action(ActionType.prevod, cislo, false);
+                Log.log(sender, "Penize byly prevedeny");
                 return true;
             }
         }

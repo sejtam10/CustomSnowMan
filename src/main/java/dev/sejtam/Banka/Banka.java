@@ -32,7 +32,10 @@ public class Banka extends JavaPlugin {
 
         MySQLSetup();
 
-        getCommand("banka").setExecutor(new Bank());
+        Bank banka = new Bank();
+
+        getCommand("banka").setExecutor(banka);
+        getServer().getPluginManager().registerEvents(banka, this);
     }
 
 

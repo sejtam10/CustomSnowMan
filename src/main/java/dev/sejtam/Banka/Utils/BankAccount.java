@@ -22,6 +22,11 @@ public class BankAccount {
     int money;
     AccountType accountType;
 
+
+    public String getName() {
+        return name;
+    }
+
     //Poplatek při odeslání peněz
     public float poplatekO() { return 0f; }
     //Poplatek při přijmu peněz
@@ -29,6 +34,9 @@ public class BankAccount {
     //Poplatek při převodu peněz
     public float poplatekU() { return 0f; }
 
+    public BankAccount(String name) {
+        this.name = name;
+    }
     public BankAccount(String name, String password) {
         this.name = name;
         this.password = Base64.getEncoder().encodeToString(password.getBytes());
@@ -142,6 +150,7 @@ public class BankAccount {
         } catch (SQLException ex) { return null; }
     }
 
+    //Log Management
     private boolean createLog(BankAccount.Log log) {
         return createLog(log.type, log.money);
     }
@@ -238,10 +247,13 @@ public class BankAccount {
         if(_money == -1)
             return -1;
 
+        int money_cache = money;
         if(poplatekO() != 0 && transaction == false) {
-            int money_cache = money;
             money = (int) (money * (100 + poplatekO()) / 100);
             createLog(ActionType.poplatek, money - money_cache);
+        } else if(poplatekU() != 0 && transaction == true) {
+            money = (int) (money * (100 + poplatekU()) / 100);
+            createLog(ActionType.poplatek, money_cache - money);
         }
 
         int remove = _money - money;
@@ -249,7 +261,7 @@ public class BankAccount {
             return -1;
 
         if(setMoney(remove))
-            return money;
+            return (money_cache - (money - money_cache));
         else return -1;
     }
 
