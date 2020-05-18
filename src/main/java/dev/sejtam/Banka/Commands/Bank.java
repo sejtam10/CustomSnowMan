@@ -4,6 +4,8 @@ import dev.sejtam.Banka.Utils.BankAccount;
 import dev.sejtam.Banka.Utils.Enums.AccountType;
 import dev.sejtam.Banka.Utils.Enums.ActionType;
 import dev.sejtam.Banka.Utils.Log;
+import dev.sejtam.Banka.Utils.MySQL;
+import dev.sejtam.Banka.Utils.Pagination;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -58,6 +60,17 @@ public class Bank implements CommandExecutor, Listener {
                 } else Log.error(sender, "Nejsi prihlasen");
                 return true;
             }
+
+            if(args[0].equalsIgnoreCase("status")) {
+                if(accounts.containsKey(sender.getName())) {
+                    BankAccount account = accounts.get(sender.getName());
+
+                    Log.log(sender,"Nazev uctu: §c" + account.getName());
+                    Log.log(sender,"Typ uctu: §c" + account.getAccountType());
+                    Log.log(sender,"Zustatek: §c" + account.getMoney() + " §7Kc");
+                } else Log.error(sender, "Nejsi prihlasen");
+                return true;
+            }
         }
 
         if(args.length >= 2) {
@@ -76,7 +89,7 @@ public class Bank implements CommandExecutor, Listener {
                 }
 
                 if(cislo <= 0) {
-                    Log.error(sender, "Castka nemuze byt menci jak 1");
+                    Log.error(sender, "Castka nemuze byt menci jak &c1");
                     return false;
                 }
 
@@ -84,7 +97,7 @@ public class Bank implements CommandExecutor, Listener {
                 int vyber = account.action(ActionType.vyber, cislo);
                 if(vyber == -1)
                     Log.error(sender, "Nemas dostatek penez nebo se vyber nepovedl");
-                else Log.log(sender, "Vyber " + vyber + " Kc probehl v poradku");
+                else Log.log(sender, "Vyber &c" + vyber + " Kc &7probehl v poradku §8(§c" + (cislo - vyber) + " Kc §7poplatek§8) §8- §7Zustatek: §c" + account.getMoney() + " Kc");
                 return true;
             }
 
@@ -103,7 +116,7 @@ public class Bank implements CommandExecutor, Listener {
                 }
 
                 if(cislo <= 0) {
-                    Log.error(sender, "Castka nemuze byt menci jak 1");
+                    Log.error(sender, "Castka nemuze byt menci jak &c1");
                     return false;
                 }
 
@@ -111,7 +124,7 @@ public class Bank implements CommandExecutor, Listener {
                 int vklad = account.action(ActionType.vklad, cislo);
                 if(vklad == -1)
                     Log.error(sender, "Nemas dostatek penez nebo se vklad nepovedl");
-                else Log.log(sender, "Vklad " + vklad + " Kc probehl v poradku");
+                else Log.log(sender, "Vklad &c" + vklad + " Kc &7probehl v poradku §8(§c" + (cislo - vklad) + " Kc §7poplatek§8) §8- §7Zustatek: §c" + account.getMoney() + " Kc");
                 return true;
             }
         }
@@ -119,7 +132,7 @@ public class Bank implements CommandExecutor, Listener {
         if(args.length >= 3) {
             if(args[0].equalsIgnoreCase("login")) {
                 if(accounts.containsKey(sender.getName())) {
-                    Log.error(sender, "Uz jsi prihlasen");
+                    Log.error(sender, "Uz jsi prihlasen §8(§c" + accounts.get(sender.getName()).getName() + "§8)");
                     return false;
                 }
 
@@ -140,6 +153,7 @@ public class Bank implements CommandExecutor, Listener {
                         return false;
                     }
 
+                    account.setPlayer(sender.getName());
                     accounts.put(sender.getName(), account.createAccount());
                     Log.log(sender, "Byl jsi prihlasen");
                 }
@@ -155,11 +169,6 @@ public class Bank implements CommandExecutor, Listener {
 
                 if(!account.isPasswordSame()) {
                     Log.error(sender, "Heslo neni spravne");
-                    return false;
-                }
-
-                if(!account.removeAccount()) {
-                    Log.error("Nastala chyba");
                     return false;
                 }
 
@@ -197,26 +206,73 @@ public class Bank implements CommandExecutor, Listener {
                 }
 
                 if(cislo <= 0) {
-                    Log.error(sender, "Castka nemuze byt menci jak 1");
+                    Log.error(sender, "Castka nemuze byt mensi jak §c1");
                     return false;
                 }
 
-                if(accounts.get(sender.getName()).action(ActionType.prevod, cislo, true) == -1) {
+                int prevod = accounts.get(sender.getName()).action(ActionType.prevod, cislo, true);
+                if(prevod == -1) {
                     Log.error(sender, "Nemas dostatek penez");
                     return false;
                 }
 
                 account.action(ActionType.prevod, cislo, false);
-                Log.log(sender, "Penize byly prevedeny");
+                Log.log(sender, "Prevod &c" + prevod + " Kc &7probehl v poradku §8(§c" + (cislo - prevod) + " Kc §7poplatek§8) §8- §7Zustatek: §c" + account.getMoney() + " Kc");
                 return true;
+            }
+
+            if(args[0].equalsIgnoreCase("log")) {
+                if(args[1].equalsIgnoreCase("hrac") || args[1].equalsIgnoreCase("ucet")) {
+                    Pagination<BankAccount.Log> pagination = null;
+                    if(args[1].equalsIgnoreCase("hrac"))
+                        pagination = MySQL.getPlayerLog(args[2]);
+                    else if (args[1].equalsIgnoreCase("ucet"))
+                        pagination = new BankAccount(args[2]).getLogs();
+
+                    if(pagination == null) {
+                        Log.error(sender, "Hrac nebyl nalezen nebo nema zadny log");
+                        return false;
+                    }
+
+                    if(pagination.size() == 0) {
+                        Log.error(sender, "Hrac nebyl nalezen nebo nema zadny log");
+                        return false;
+                    }
+
+                    int page = 0;
+                    if(args.length > 3) {
+                        try {
+                            page = Integer.parseInt(args[3]) - 1;
+                        } catch (NumberFormatException ex) {
+                            Log.error(sender, "Vlozene cislo neni cislo");
+                            return true;
+                        }
+                    }
+
+                    if(page < 0 || pagination.totalPages() <= page) {
+                        Log.error(sender, "Maximalni stranka je §c" + (pagination.totalPages()));
+                        return true;
+                    }
+
+                    Log.sendMessageWP(sender, "         &7-------- &8[&c" + (page + 1) + "&8/&c" + pagination.totalPages() + "&8] &7--------");
+                    for(BankAccount.Log log : pagination.getPage(page)) {
+                        Log.sendMessageWP(sender, "§8[§c" + log.time.toString() + "§8] &7" + log.type + " §8- §7" + log.money + " Kc");
+                    }
+                    return true;
+                } else {
+                    Log.error(sender, "/banka log <hrac/ucet> <jmeno> <stranka>");
+                    return false;
+                }
             }
         }
 
         if(args.length >= 4) {
             if(args[0].equalsIgnoreCase("create")) {
-                AccountType type = AccountType.valueOf(args[3]);
-                if(type == null) {
-                    Log.error(sender, "Tento typ uctu neexistuje");
+                AccountType type;
+                try {
+                    type = AccountType.valueOf(args[3]);
+                } catch (IllegalArgumentException ex) {
+                    Log.error(sender, "Typy uctu: klasicky, studentsky");
                     return false;
                 }
 
@@ -238,14 +294,16 @@ public class Bank implements CommandExecutor, Listener {
     }
 
     public void sendHelp(CommandSender sender) {
-        Log.log(sender,"/banka help - Ukaze napovedu");
-        Log.log(sender,"/banka login <jmeno> <heslo> - Prihlasi k uctu");
-        Log.log(sender,"/banka logout - Odhlasi z uctu");
-        Log.log(sender,"/banka create <jmeno> <heslo> <typUctu> - Vytvori ucet");
-        Log.log(sender,"/banka remove <jmeno> <heslo> - Zrusi ucet");
-        Log.log(sender,"/banka remove - Zrusi aktualni ucet");
-        Log.log(sender,"/banka vyber <castka> - Vyber hotovosti z uctu");
-        Log.log(sender,"/banka vklad <castka> - Vlozi hotovost na ucet");
-        Log.log(sender,"/banka prevod <ucet> <castka> - Prevod penez na druhy ucet");
+        Log.log(sender,"/banka help - §cUkaze napovedu");
+        Log.log(sender,"/banka login <jmeno> <heslo> - §cPrihlasi k uctu");
+        Log.log(sender,"/banka logout - §cOdhlasi z uctu");
+        Log.log(sender,"/banka status - §cUkaze informace o ucte");
+        Log.log(sender,"/banka create <jmeno> <heslo> <typUctu> - §cVytvori ucet");
+        Log.log(sender,"/banka remove <jmeno> <heslo> - §cZrusi ucet");
+        Log.log(sender,"/banka remove - §cZrusi aktualni ucet");
+        Log.log(sender,"/banka vyber <castka> - §cVyber hotovosti z uctu");
+        Log.log(sender,"/banka vklad <castka> - §cVlozi hotovost na ucet");
+        Log.log(sender,"/banka prevod <ucet> <castka> - §cPrevod penez na druhy ucet");
+        Log.log(sender,"/banka log <hrac/ucet> <jmeno> <stranka> - §cVypis logu");
     }
 }
