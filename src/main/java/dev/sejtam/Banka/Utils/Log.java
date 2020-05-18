@@ -15,6 +15,9 @@ public class Log {
     public static void sendMessage(CommandSender sender, String message) {
         sender.sendMessage(_(Banka.getInstance().getPrefix() + message));
     }
+    public static void sendMessageWP(CommandSender sender, String message) {
+        sender.sendMessage(_(message));
+    }
     public static void warning(String message) {
         sendMessage("&6" + message);
     }

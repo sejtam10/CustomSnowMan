@@ -22,9 +22,16 @@ public class BankAccount {
     int money;
     AccountType accountType;
 
+    String player;
 
+    public void setPlayer(String player) {
+        this.player = player;
+    }
     public String getName() {
-        return name;
+        return this.name;
+    }
+    public AccountType getAccountType() {
+        return this.accountType;
     }
 
     //Poplatek při odeslání peněz
@@ -47,6 +54,14 @@ public class BankAccount {
         this.password = Base64.getEncoder().encodeToString(password.getBytes());
         this.money = money;
         this.accountType = accountType;
+    }
+    public BankAccount(int id, String name, String password, int money, AccountType accountType, String player) {
+        this.id = id;
+        this.name = name;
+        this.password = Base64.getEncoder().encodeToString(password.getBytes());
+        this.money = money;
+        this.accountType = accountType;
+        this.player = player;
     }
     public BankAccount(int id, String name, String password, int money, AccountType accountType) {
         this.id = id;
@@ -78,11 +93,11 @@ public class BankAccount {
 
                 switch(this.accountType) {
                     case klasicky:
-                        return new ClassicAccount(this.id, this.name, this.password, this.money, this.accountType);
+                        return new ClassicAccount(this.id, this.name, this.password, this.money, this.accountType, this.player);
                     case studentsky:
-                        return new StudentAccount(this.id, this.name, this.password, this.money, this.accountType);
+                        return new StudentAccount(this.id, this.name, this.password, this.money, this.accountType, this.player);
                     default:
-                        return new BankAccount(this.id, this.name, this.password, this.money, this.accountType);
+                        return new BankAccount(this.id, this.name, this.password, this.money, this.accountType, this.player);
                 }
             }
 
@@ -163,14 +178,17 @@ public class BankAccount {
                 return false;
 
             Statement statement = Banka.getConnection().createStatement();
-            statement.execute(String.format("INSERT INTO banka.logs (id, name, type, money) VALUES ('%s', '%s', '%s', '%s')", this.id, this.name, action, money));
+            statement.execute(String.format("INSERT INTO banka.account_log (id, name, type, money) VALUES ('%s', '%s', '%s', '%s')", this.id, this.name, action, money));
+            if(player != null)
+                statement.execute(String.format("INSERT INTO banka.player_log (name, type, money) VALUES ('%s', '%s', '%s')", this.player, action, money));
+
             return true;
         } catch(SQLException ex) {
             ex.printStackTrace();
             return false;
         }
     }
-    public List<BankAccount.Log> getLogs() {
+    public Pagination<Log> getLogs() {
         try {
             if (Banka.getConnection() == null)
                 return null;
@@ -179,8 +197,9 @@ public class BankAccount {
                 return null;
 
             Statement statement = Banka.getConnection().createStatement();
-            ResultSet resultSet = statement.executeQuery("SELECT t.* FROM banka.logs t WHERE t.name = '" + this.name + "' AND t.id = '" + this.id + "'");
-            List<BankAccount.Log> logs = new ArrayList<>();
+            ResultSet resultSet = statement.executeQuery("SELECT t.* FROM banka.account_log t WHERE t.name = '" + this.name + "'");
+
+            Pagination<Log> logs = new Pagination<>(5);
             while(resultSet.next()) {
                 logs.add(new BankAccount.Log(resultSet.getTimestamp("time"),
                                 ActionType.valueOf(resultSet.getString("type")),
@@ -256,7 +275,7 @@ public class BankAccount {
             createLog(ActionType.poplatek, money_cache - money);
         }
 
-        int remove = _money - money;
+        int remove = _money - money_cache;
         if(remove < 0)
             return -1;
 
@@ -284,7 +303,7 @@ public class BankAccount {
         return number;
     }
 
-    public class Log {
+    public static class Log {
         public Timestamp time;
         public ActionType type;
         public int money;

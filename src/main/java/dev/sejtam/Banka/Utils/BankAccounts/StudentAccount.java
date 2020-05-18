@@ -13,4 +13,8 @@ public class StudentAccount extends BankAccount {
         super(id, name, password, money, accountType);
     }
 
+    public StudentAccount(int id, String name, String password, int money, AccountType accountType, String player) {
+        super(id, name, password, money, accountType, player);
+    }
+
 }

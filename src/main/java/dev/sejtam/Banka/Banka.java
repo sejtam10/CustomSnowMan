@@ -16,7 +16,7 @@ public class Banka extends JavaPlugin {
         return true;
     }
     public String getPrefix() {
-        return "§8[§6" + this.getName() + "§8] §7";
+        return "§8[§c" + this.getName() + "§8] §7";
     }
 
     //Instance
@@ -38,14 +38,13 @@ public class Banka extends JavaPlugin {
         getServer().getPluginManager().registerEvents(banka, this);
     }
 
-
-
     //MySQL
     private static Connection connection;
     public static Connection getConnection() {
         return connection;
     }
 
+    //TODO Databaze v configu
     public void MySQLSetup() {
         try {
             Class.forName("com.mysql.jdbc.Driver").newInstance();
