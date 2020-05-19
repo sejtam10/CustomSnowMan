@@ -1,13 +1,8 @@
 package dev.sejtam.Banka;
 
 import dev.sejtam.Banka.Commands.Bank;
-import dev.sejtam.Banka.Utils.Log;
-import dev.sejtam.Banka.Utils.MySQL;
+import dev.sejtam.Banka.mysql.SimpleConnectionPool;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 
 public class Banka extends JavaPlugin {
 
@@ -25,7 +20,6 @@ public class Banka extends JavaPlugin {
         return instance;
     }
 
-
     @Override
     public void onEnable() {
         instance = this;
@@ -39,22 +33,38 @@ public class Banka extends JavaPlugin {
     }
 
     //MySQL
-    private static Connection connection;
-    public static Connection getConnection() {
-        return connection;
-    }
+    public SimpleConnectionPool connectionPool = new SimpleConnectionPool("127.0.01", "banka", "root", "");
 
     //TODO Databaze v configu
     public void MySQLSetup() {
-        try {
-            Class.forName("com.mysql.jdbc.Driver").newInstance();
+        createTables();
+    }
 
-            Log.log("MySQL Driver setup");
-            connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/banka", "root", "");
-            if(connection != null)
-                Log.log("MySQL Setup completed");
-        } catch (SQLException | ClassNotFoundException | IllegalAccessException | InstantiationException ex) { ex.printStackTrace(); }
-        MySQL.createTables();
+    public void createTables() {
+        connectionPool.executeUpdate(
+                "create table if not exists ucty(" +
+                        "    id          int auto_increment" +
+                        "    primary     key," +
+                        "    name        varchar(255)                          not null," +
+                        "    password    varchar(255)                          not null," +
+                        "    create_date timestamp default current_timestamp() not null," +
+                        "    type        enum('klasicky', 'studentsky')        not null," +
+                        "    money       int       default 0                   not null);", null);
+
+        connectionPool.executeUpdate(
+                "create table if not exists account_log(" +
+                        "    id     int                                           not null," +
+                        "    name   varchar(255)                                  not null," +
+                        "    time   TIMESTAMP default current_timestamp()         not null," +
+                        "    type   enum('vyber', 'prevod', 'vklad', 'poplatek')  not null," +
+                        "    money  int                                           not null);", null);
+
+        connectionPool.executeUpdate(
+                "create table if not exists player_log(" +
+                        "    name   varchar(255)                                  not null," +
+                        "    time   TIMESTAMP default current_timestamp()         not null," +
+                        "    type   enum('vyber', 'prevod', 'vklad', 'poplatek')  not null," +
+                        "    money  int                                           not null);", null);
     }
 
 }
