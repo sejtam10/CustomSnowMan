@@ -1,6 +1,5 @@
 package dev.sejtam.Banka.mysql;
 
-import dev.sejtam.Banka.Utils.RunnableHelper;
 import dev.sejtam.Banka.mysql.interfaces.ConnectionPool;
 
 import java.sql.*;
@@ -8,7 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.concurrent.CompletableFuture;
 
 //TODO Max connections
 public class SimpleConnectionPool implements ConnectionPool {
@@ -47,24 +46,45 @@ public class SimpleConnectionPool implements ConnectionPool {
         return createConnection();
     }
 
-    public void executeAsync(String sql, final Consumer<Boolean> callback) {
-        RunnableHelper.runTaskAsynchronously(() -> callback.accept(executeQuery(sql, null, false) != null));
+    public Boolean executeAsync(String sql) {
+        CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> executeQuery(sql, null, false) != null );
+
+        try {
+            return future.get();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }
     }
 
     public boolean execute(String sql) {
         return executeQuery(sql, null, false) != null;
     }
 
-    public void executeUpdateAsync(String sql, List<Object> parameters, final Consumer<Boolean> callback) {
-        RunnableHelper.runTaskAsynchronously(() -> callback.accept(executeUpdate(sql, parameters)));
+    public Boolean executeUpdateAsync(String sql, List<Object> parameters) {
+        CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> executeQuery(sql, parameters, false) != null );
+
+        try {
+            return future.get();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }
     }
 
     public boolean executeUpdate(String sql, List<Object> parameters) {
         return executeQuery(sql, parameters, true) != null;
     }
 
-    public void executeQueryAsync(String sql, List<Object> parameters, boolean isUpdate, final Consumer<List<Map<String, Object>>> callback) {
-        RunnableHelper.runTaskAsynchronously(() -> callback.accept(executeQuery(sql, parameters, isUpdate)));
+    public List<Map<String, Object>> executeQueryAsync(String sql, List<Object> parameters) {
+        CompletableFuture<List<Map<String, Object>>> future = CompletableFuture.supplyAsync(() -> executeQuery(sql, parameters, false));
+
+        try {
+            return future.get();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }
     }
 
     public List<Map<String, Object>> executeQuery(String sql, List<Object> parameters, boolean isUpdate) {
@@ -82,15 +102,10 @@ public class SimpleConnectionPool implements ConnectionPool {
             if (preparedStatement == null)
                 return null;
 
-            if (parameters == null) {
-                if (preparedStatement.execute())
-                    return new ArrayList<>();
-                else
-                    return null;
-            }
-
-            for (int i = 1; i <= parameters.size(); i++) {
-                preparedStatement.setObject(i, parameters.get(i - 1));
+            if(parameters != null) {
+                for (int i = 1; i <= parameters.size(); i++) {
+                    preparedStatement.setObject(i, parameters.get(i - 1));
+                }
             }
 
             if(isUpdate) {
@@ -107,7 +122,7 @@ public class SimpleConnectionPool implements ConnectionPool {
             while (resultSet.next()) {
                 Map<String, Object> objects = new HashMap<>();
                 for (int x = 1; x <= resultSetMetaData.getColumnCount(); x++) {
-                    objects.put(resultSetMetaData.getCatalogName(x), resultSet.getObject(x));
+                    objects.put(resultSetMetaData.getColumnName(x), resultSet.getObject(x));
                 }
                 returnList.add(objects);
             }
