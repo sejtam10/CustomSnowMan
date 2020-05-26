@@ -24,15 +24,15 @@ public class CustomSnowman extends EntitySnowman {
     public CustomSnowman(World world, String owner) {
         super(world);
 
-        List targetB = (List)getPrivateField("b", PathfinderGoalSelector.class, targetSelector); targetB.clear();
-        List targetC = (List)getPrivateField("c", PathfinderGoalSelector.class, targetSelector); targetC.clear();
+        List targetB = (List) getPrivateField("b", PathfinderGoalSelector.class, targetSelector);
+        targetB.clear();
+        List targetC = (List) getPrivateField("c", PathfinderGoalSelector.class, targetSelector);
+        targetC.clear();
 
-        //this.targetSelector.a(new PathfinderGoalHurtByTarget(this, false, new Class[0]));
-        this.targetSelector.a(1, new SnowmanPathfinderGoalNearestAttackableTarget(this, EntityHuman.class, true, owner));
+        this.targetSelector.a(1, new SnowmanPathfinderGoalNearestAttackableTarget(this, EntityHuman.class, 30, true, false, null, owner));
     }
 
-    public static Object getPrivateField(String fieldName, Class clazz, Object object)
-    {
+    public static Object getPrivateField(String fieldName, Class clazz, Object object) {
         Field field;
         Object o = null;
 
@@ -41,10 +41,9 @@ public class CustomSnowman extends EntitySnowman {
             field.setAccessible(true);
 
             o = field.get(object);
-        } catch(NoSuchFieldException | IllegalAccessException e) {
+        } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
         }
-
         return o;
     }
 
