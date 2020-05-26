@@ -1,7 +1,9 @@
 package dev.sejtam.csm.mobs.Snowman;
 
+import dev.sejtam.csm.mobs.EntityTypes;
 import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
+import org.bukkit.entity.EntityType;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -24,27 +26,12 @@ public class CustomSnowman extends EntitySnowman {
     public CustomSnowman(World world, String owner) {
         super(world);
 
-        List targetB = (List) getPrivateField("b", PathfinderGoalSelector.class, targetSelector);
+        List targetB = (List) EntityTypes.getPrivateField("b", PathfinderGoalSelector.class, targetSelector);
         targetB.clear();
-        List targetC = (List) getPrivateField("c", PathfinderGoalSelector.class, targetSelector);
+        List targetC = (List) EntityTypes.getPrivateField("c", PathfinderGoalSelector.class, targetSelector);
         targetC.clear();
 
         this.targetSelector.a(1, new SnowmanPathfinderGoalNearestAttackableTarget(this, EntityHuman.class, 30, true, false, null, owner));
-    }
-
-    public static Object getPrivateField(String fieldName, Class clazz, Object object) {
-        Field field;
-        Object o = null;
-
-        try {
-            field = clazz.getDeclaredField(fieldName);
-            field.setAccessible(true);
-
-            o = field.get(object);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
-        }
-        return o;
     }
 
 }

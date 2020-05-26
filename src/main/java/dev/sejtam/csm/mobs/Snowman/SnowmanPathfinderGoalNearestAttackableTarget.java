@@ -46,7 +46,7 @@ public class SnowmanPathfinderGoalNearestAttackableTarget<T extends EntityLiving
         this(entitycreature, oclass, cooldown, flag, flag1, predicate, null);
     }
 
-
+    //Shooting timing
     @Override
     public boolean a() {
         if (this.canShoot) {
@@ -57,6 +57,7 @@ public class SnowmanPathfinderGoalNearestAttackableTarget<T extends EntityLiving
                 return false;
             }
 
+            // Field d == Target Entity
             this.d = (EntityLiving) list.get(0);
             this.canShoot = false;
             Bukkit.getScheduler().scheduleSyncDelayedTask(Main.getInstance(), () -> canShoot = true, cooldown);
@@ -66,6 +67,7 @@ public class SnowmanPathfinderGoalNearestAttackableTarget<T extends EntityLiving
         }
     }
 
+    //IF right target
     @Override
     public void c() {
         // Field d == Target Entity
