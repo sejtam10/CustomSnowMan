@@ -1,10 +1,10 @@
-name: Banka
-description: Banka plugin.
+name: Custom SnowMan
+description: csm plugin.
 author: sejtam.developer@gmail.com
 authors: [Sejtam_]
 website: www.sejtam.cz
 version: 0.0.1
-main: dev.sejtam.Banka.Banka
+main: dev.sejtam.csm.Main
 
 commands:
-  banka:
+  test:

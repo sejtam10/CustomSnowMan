@@ -1,22 +1,20 @@
-package dev.sejtam.Banka.Utils;
+package dev.sejtam.csm;
 
-import dev.sejtam.Banka.Banka;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 
+import java.util.List;
+
 public class Log {
     static ConsoleCommandSender console = Bukkit.getConsoleSender();
 
     public static void sendMessage(String message) {
-        console.sendMessage(_(Banka.getInstance().getPrefix() + message));
+        console.sendMessage(_(Main.getInstance().getPrefix() + message));
     }
     public static void sendMessage(CommandSender sender, String message) {
-        sender.sendMessage(_(Banka.getInstance().getPrefix() + message));
-    }
-    public static void sendMessageWP(CommandSender sender, String message) {
-        sender.sendMessage(_(message));
+        sender.sendMessage(_(Main.getInstance().getPrefix() + message));
     }
     public static void warning(String message) {
         sendMessage("&6" + message);
@@ -31,7 +29,7 @@ public class Log {
         sendMessage(sender, "&c" + message);
     }
     public static void error(Throwable t, String message) {
-        sendMessage("&4[" + Banka.getInstance().getName() + " - " + t.getMessage() + "] " + message);
+        sendMessage("&4[" + Main.getInstance().getName() + " - " + t.getMessage() + "] " + message);
         t.printStackTrace();
     }
     public static void log(String message) {
@@ -41,12 +39,15 @@ public class Log {
         sendMessage(sender, "&7" + message);
     }
     public static void debug(String message) {
-        if(Banka.getInstance().getDebugMode())
-            sendMessage("&8[&3" + Banka.getInstance().getName() + "-DEBUG&8] &7" + message);
+        if(Main.getInstance().getDebugMode())
+            sendMessage("&8[&3" + Main.getInstance().getName() + "-DEBUG&8] &7" + message);
+    }
+    public static void banner(List<String> banner) {
+        for(String line : banner)
+            console.sendMessage(_(line));
     }
 
     public static String _(String message) {
         return ChatColor.translateAlternateColorCodes('&', message);
     }
-
 }
