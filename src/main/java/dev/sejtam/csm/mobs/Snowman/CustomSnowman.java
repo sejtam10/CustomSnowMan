@@ -5,9 +5,7 @@ import dev.sejtam.csm.mobs.EntityTypes;
 import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
-import org.bukkit.entity.EntityType;
 
-import java.lang.reflect.Field;
 import java.util.List;
 
 public class CustomSnowman extends EntitySnowman {
