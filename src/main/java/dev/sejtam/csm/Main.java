@@ -37,7 +37,7 @@ public class Main extends JavaPlugin {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (label.equalsIgnoreCase("test")) {
-            EntityTypes.spawnEntity(new CustomSnowman(Bukkit.getWorlds().get(0), ((Player) sender).getName()), ((Player) sender).getLocation());
+            EntityTypes.spawnEntity(new CustomSnowman(Bukkit.getWorlds().get(0), 200), ((Player) sender).getLocation());
         }
         return false;
     }
