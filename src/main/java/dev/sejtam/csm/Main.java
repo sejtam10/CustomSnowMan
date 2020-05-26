@@ -14,12 +14,14 @@ public class Main extends JavaPlugin {
     public boolean getDebugMode() {
         return true;
     }
+
     public String getPrefix() {
         return "§8[§c" + this.getName() + "§8] §7";
     }
 
     //Instance
     private static Main instance;
+
     public static Main getInstance() {
         return instance;
     }
@@ -34,7 +36,7 @@ public class Main extends JavaPlugin {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if(label.equalsIgnoreCase("test")) {
+        if (label.equalsIgnoreCase("test")) {
             EntityTypes.spawnEntity(new CustomSnowman(Bukkit.getWorlds().get(0), ((Player) sender).getName()), ((Player) sender).getLocation());
         }
         return false;
