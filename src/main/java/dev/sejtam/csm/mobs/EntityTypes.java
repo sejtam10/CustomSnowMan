@@ -1,6 +1,7 @@
 package dev.sejtam.csm.mobs;
 
 import dev.sejtam.csm.Log;
+import dev.sejtam.csm.mobs.Snowman.CustomSnowman;
 import net.minecraft.server.v1_8_R3.Entity;
 import org.bukkit.Location;
 import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;

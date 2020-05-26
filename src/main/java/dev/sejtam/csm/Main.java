@@ -1,6 +1,6 @@
 package dev.sejtam.csm;
 
-import dev.sejtam.csm.mobs.CustomSnowman;
+import dev.sejtam.csm.mobs.Snowman.CustomSnowman;
 import dev.sejtam.csm.mobs.EntityTypes;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -35,7 +35,7 @@ public class Main extends JavaPlugin {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(label.equalsIgnoreCase("test")) {
-            EntityTypes.spawnEntity(new CustomSnowman(Bukkit.getWorlds().get(0)), ((Player) sender).getLocation());
+            EntityTypes.spawnEntity(new CustomSnowman(Bukkit.getWorlds().get(0), ((Player) sender).getName()), ((Player) sender).getLocation());
         }
         return false;
     }
